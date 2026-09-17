@@ -107,9 +107,15 @@ const summary =
             suggestions: ["加强主题句与支持论据的联系。"],
             sample: summary,
           };
-        else if (system.includes("writing tutor"))
+        else if (system.includes("English writing examiner"))
           output = {
             score: 86,
+            criteria: {
+              content: 35,
+              organization: 17,
+              language: 25,
+              length: 10,
+            },
             feedback: "概括清楚，注意保留核心论据。",
             suggestions: ["缩减重复表达。"],
             sample: summary,
@@ -163,12 +169,16 @@ const summary =
     assert.equal(settings.apiKey, undefined);
     assert.equal(settings.encryptedKey, undefined);
     await page.getByRole("button", { name: "显示密钥", exact: true }).click();
-    await expect(page.locator("#api-key")).toHaveValue("folio-test-secret-not-real");
+    await expect(page.locator("#api-key")).toHaveValue(
+      "folio-test-secret-not-real",
+    );
     await expect(page.locator("#api-key")).toHaveAttribute("type", "text");
     await page.getByRole("button", { name: "隐藏密钥", exact: true }).click();
     await expect(page.locator("#api-key")).toHaveValue("");
     await page.getByRole("button", { name: "测试连接", exact: true }).click();
-    await expect(page.locator(".connection-test [role=status]")).toContainText("连接成功");
+    await expect(page.locator(".connection-test [role=status]")).toContainText(
+      "连接成功",
+    );
     await page.getByLabel("新增模型名称").fill("custom/model-test");
     await page.getByRole("button", { name: "添加模型", exact: true }).click();
     await page.getByRole("button", { name: "保存设置" }).click();
@@ -237,7 +247,8 @@ const summary =
     await page.getByRole("button", { name: "概要写作", exact: true }).click();
     await page.locator("#draft").fill(summary);
     await page.getByRole("button", { name: "获取 AI 写作反馈" }).click();
-    await expect(page.locator(".score")).toContainText("86");
+    await expect(page.locator(".score")).toContainText("87");
+    await expect(page.locator(".score")).toContainText("托福标准");
     // Synthetic photo fixture; the vision response is mocked like the other AI calls.
     const photoFile = path.join(TEST_DATA, "handwriting-test.png");
     const { createCanvas } = require("@napi-rs/canvas");
@@ -322,8 +333,10 @@ const summary =
     await page.getByRole("button", { name: "发送消息", exact: true }).click();
     await expect(page.locator(".message.assistant")).toHaveCount(2);
     const requests = await app.evaluate(() => global.__requests);
-    assert.ok(requests.every((r) => !Object.hasOwn(r, "temperature")),
-      "All AI requests must use model defaults without a temperature parameter");
+    assert.ok(
+      requests.every((r) => !Object.hasOwn(r, "temperature")),
+      "All AI requests must use model defaults without a temperature parameter",
+    );
     assert.ok(requests.every((r) => r.model === "anthropic/claude-sonnet-5"));
     const handwritingRequest = requests.find((r) =>
       r.messages[0].content.includes("printed text, screenshots"),

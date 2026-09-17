@@ -214,8 +214,15 @@ function registerHandlers() {
     try {
       response = await fetch(BASE_URL + "/chat/completions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: [{ role: "user", content: "Reply only OK." }], max_tokens: 32 }),
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: "Reply only OK." }],
+          max_tokens: 32,
+        }),
         signal: AbortSignal.timeout(30000),
       });
     } catch {
@@ -373,9 +380,8 @@ function registerHandlers() {
         const photos = images.map((image) => loadAttachment(dataDir, image.id));
         if (photos.some((photo) => photo.type !== "image"))
           throw new Error("手写作文需要图片附件。");
-        return askAI(
-          core.handwritingMessages(article, photos, level),
-          core.validateHandwritingFeedback,
+        return askAI(core.handwritingMessages(article, photos, level), (data) =>
+          core.validateHandwritingFeedback(data, level),
         );
       }
       if (
@@ -384,9 +390,8 @@ function registerHandlers() {
         core.wordCount(draft) > 200
       )
         throw new Error("请将英文概要控制在 100–200 词。");
-      return askAI(
-        core.feedbackMessages(article, draft, level),
-        core.validateFeedback,
+      return askAI(core.feedbackMessages(article, draft, level), (data) =>
+        core.validateWritingFeedback(data, level),
       );
     },
   );

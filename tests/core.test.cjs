@@ -73,6 +73,28 @@ test("summary feedback requires an actual 100–200 word sample", () => {
   assert.throws(() => c.validateFeedback({ ...data, sample: "too short" }));
   assert.throws(() => c.validateFeedback({ ...data, score: 101 }));
 });
+test("writing feedback uses the selected level and transparent calibrated rubric", () => {
+  const messages = c.feedbackMessages(
+    { text: "Source article." },
+    "word ".repeat(120),
+    "高考",
+  );
+  assert.match(messages[0].content, /Gaokao level/);
+  assert.match(messages[0].content, /must not receive below 70/);
+  assert.match(messages[0].content, /grouping examples/);
+  const result = c.validateWritingFeedback(
+    {
+      score: 1,
+      criteria: { content: 32, organization: 16, language: 24, length: 10 },
+      feedback: "按高考标准评价。",
+      suggestions: ["改进建议"],
+      sample: "word ".repeat(120),
+    },
+    "高考",
+  );
+  assert.equal(result.score, 82);
+  assert.equal(result.level, "高考");
+});
 test("model JSON and EPUB active content are treated as data", () => {
   assert.deepEqual(c.parseJson('```json\n{"ok":true}\n```'), { ok: true });
   assert.throws(() => c.parseJson("bad"));

@@ -1501,7 +1501,7 @@ function Writing({
               {practice.feedback.score}
               <small>/100</small>
             </span>
-            <b>写作反馈</b>
+            <b>{practice.feedback.level || level}标准 · 写作反馈</b>
             <CopyButton
               text={JSON.stringify(practice.feedback, null, 2)}
               notify={notify}
