@@ -2163,6 +2163,14 @@ function SettingsPage({ settings, onSaved, notify }) {
           </label>
         )}
         <div className="invite-card">
+          <span>订阅用户请使用 sk-ss-v1- 开头的完整订阅 API Key。</span>
+          <button
+            onClick={() => api.openExternal("https://zenmux.ai/platform/subscription")}
+          >
+            获取订阅密钥 <ArrowUpRight size={14} />
+          </button>
+        </div>
+        <div className="invite-card">
           <span>还没有 API Key？</span>
           <button
             onClick={() => api.openExternal("https://zenmux.ai/invite/GBQMC5")}

@@ -3,6 +3,7 @@ const path = require("node:path");
 const { fileURLToPath } = require("node:url");
 const cheerio = require("cheerio");
 const { dialog, clipboard } = require("electron");
+const { aiError } = require("./ai-error.cjs");
 const { ingestAttachment, loadAttachment } = require("./attachments.cjs");
 function registerStudy({
   bind,
@@ -181,22 +182,7 @@ function registerStudy({
     } catch {
       throw new Error("AI 请求超时或网络不可用，请重试。");
     }
-    if (!response.ok) {
-      let detail = "";
-      try {
-        const errorBody = await response.clone().json();
-        detail =
-          errorBody.error?.message ||
-          errorBody.message ||
-          errorBody.error ||
-          "";
-      } catch {
-        /* gateway may return no JSON */
-      }
-      throw new Error(
-        `AI 请求失败（${response.status}）。${detail ? String(detail).slice(0, 300) : "请检查密钥、额度及模型的图片支持能力。"}`,
-      );
-    }
+    if (!response.ok) throw await aiError(response, key);
     const body = await response.json(),
       content = body.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim())

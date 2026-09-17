@@ -9,6 +9,7 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const core = require("./core.cjs");
+const { aiError } = require("./ai-error.cjs");
 const { downloadBook } = require("./download.cjs");
 const { importBook, articleFromPdf } = require("./books.cjs");
 const sample = require("./sample.json");
@@ -95,27 +96,7 @@ async function askAI(messages, validator) {
   } catch {
     throw new Error("AI 请求超时或网络不可用，请稍后重试。");
   }
-  if (!response.ok) {
-    const messages = {
-      401: "API Key 无效，请检查设置。",
-      402: "ZenMux 余额不足，请前往平台检查。",
-      403: "当前 API Key 无权访问此模型。",
-      429: "请求过于频繁或额度不足，请稍后重试。",
-    };
-    let detail = "";
-    try {
-      const body = await response.clone().json();
-      detail = body.error?.message || body.message || body.error || "";
-    } catch {
-      /* some gateways return an empty/non-JSON body */
-    }
-    const hint =
-      messages[response.status] ||
-      `ZenMux 请求失败（HTTP ${response.status}）。`;
-    throw new Error(
-      `${hint}${detail ? ` ${String(detail).slice(0, 300)}` : " 请检查 API Key、模型名称和额度。"}`,
-    );
-  }
+  if (!response.ok) throw await aiError(response, key);
   const body = await response.json();
   return {
     ...validator(core.parseJson(body.choices?.[0]?.message?.content)),
@@ -388,6 +369,7 @@ function registerHandlers() {
     if (
       ![
         "https://zenmux.ai/invite/GBQMC5",
+        "https://zenmux.ai/platform/subscription",
         "https://zenmux.ai",
         `https://github.com/${REPO}`,
       ].includes(url)
