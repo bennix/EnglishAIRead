@@ -1,6 +1,6 @@
 {
   "name": "folio-english-reader",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "description": "Folio — AI-assisted English reading with ZenMux",
   "main": "electron/main.cjs",
@@ -53,6 +53,8 @@
     },
     "mac": {
       "category": "public.app-category.education",
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "timestamp": "http://timestamp.apple.com/ts01",
       "signIgnore": [
         ".*\\.pak$"
