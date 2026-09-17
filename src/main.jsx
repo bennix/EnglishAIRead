@@ -1217,7 +1217,8 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
         </button>
       )}
       <p className="ai-footnote">
-        由 {practice.quiz.model?.split("/").pop()} 生成 · 请结合原文核对
+        由 {practice.quiz.model?.split("/").pop()} 出题并判题 ·
+        每题附原文依据，请结合文章核对
       </p>
     </div>
   );
