@@ -1,0 +1,27 @@
+/* Progressive enhancement: content remains visible if JavaScript is unavailable. */
+.reveal {
+  opacity: 1;
+}
+
+.js .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.js .reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .hero-stage {
+    overflow: hidden;
+  }
+}
