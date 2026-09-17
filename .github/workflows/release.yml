@@ -49,10 +49,10 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-        run: npx electron-builder ${{ matrix.args }}
+        run: npx electron-builder ${{ matrix.args }} --publish never
       - name: Build Windows/Linux installers
         if: matrix.platform != 'mac'
-        run: npx electron-builder ${{ matrix.args }}
+        run: npx electron-builder ${{ matrix.args }} --publish never
       - name: Upload artifacts
         if: matrix.platform != 'mac' || env.HAS_MACOS_CERTIFICATE == 'true'
         uses: actions/upload-artifact@v4
