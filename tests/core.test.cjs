@@ -97,6 +97,21 @@ test("writing feedback uses the selected level and transparent calibrated rubric
   assert.equal(result.score, 82);
   assert.equal(result.level, "高考");
 });
+test("all writing levels share the same content coverage expectations", () => {
+  for (const level of c.LEVELS) {
+    const prompt = c.feedbackMessages(
+      { text: "Source article." },
+      "word ".repeat(120),
+      level,
+    )[0].content;
+    assert.match(prompt, /same content-coverage expectations at every/);
+    assert.match(
+      prompt,
+      /central claim, the major causes or supporting reasons/,
+    );
+    assert.match(prompt, /Exam level changes the expected language control/);
+  }
+});
 test("model JSON and EPUB active content are treated as data", () => {
   assert.deepEqual(c.parseJson('```json\n{"ok":true}\n```'), { ok: true });
   assert.throws(() => c.parseJson("bad"));
