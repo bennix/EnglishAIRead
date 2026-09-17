@@ -88,7 +88,6 @@ async function askAI(messages, validator) {
       body: JSON.stringify({
         model,
         messages,
-        temperature: 0.4,
         max_tokens: 6000,
       }),
       signal: AbortSignal.timeout(120000),

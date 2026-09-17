@@ -322,6 +322,8 @@ const summary =
     await page.getByRole("button", { name: "发送消息", exact: true }).click();
     await expect(page.locator(".message.assistant")).toHaveCount(2);
     const requests = await app.evaluate(() => global.__requests);
+    assert.ok(requests.every((r) => !Object.hasOwn(r, "temperature")),
+      "All AI requests must use model defaults without a temperature parameter");
     assert.ok(requests.every((r) => r.model === "anthropic/claude-sonnet-5"));
     const handwritingRequest = requests.find((r) =>
       r.messages[0].content.includes("HANDWRITTEN"),
