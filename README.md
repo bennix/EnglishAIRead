@@ -22,8 +22,10 @@ npm start
 
 ```bash
 npm run pack   # 可直接运行的应用目录，输出 release/
-npm run dist   # 安装包：macOS DMG/ZIP、Windows NSIS、Linux AppImage
+npm run dist   # 安装包：macOS DMG/ZIP、Windows NSIS、Linux AppImage/DEB/RPM
 ```
+
+本机 macOS Apple Silicon DMG 位于 `release/Folio-mac-arm64.dmg`，DMG 内含 `Applications` 快捷方式，拖拽即可安装。应用已使用本机 Xcode Keychain 中的 Developer ID Application 证书签名；Apple Notary 公证需要在本机 `notarytool` Keychain Profile 或 GitHub Secrets 中提供 Apple ID、Team ID 和专用密码后提交，专用密码不会写入仓库。
 
 `npm run dev:web` 仅用于浏览器界面预览。文件、安全存储和 AI 接口必须在 Electron 桌面版使用。
 
