@@ -162,6 +162,13 @@ const summary =
     assert.equal(settings.hasApiKey, true);
     assert.equal(settings.apiKey, undefined);
     assert.equal(settings.encryptedKey, undefined);
+    await page.getByRole("button", { name: "显示密钥", exact: true }).click();
+    await expect(page.locator("#api-key")).toHaveValue("folio-test-secret-not-real");
+    await expect(page.locator("#api-key")).toHaveAttribute("type", "text");
+    await page.getByRole("button", { name: "隐藏密钥", exact: true }).click();
+    await expect(page.locator("#api-key")).toHaveValue("");
+    await page.getByRole("button", { name: "测试连接", exact: true }).click();
+    await expect(page.locator(".connection-test [role=status]")).toContainText("连接成功");
     await page.getByLabel("新增模型名称").fill("custom/model-test");
     await page.getByRole("button", { name: "添加模型", exact: true }).click();
     await page.getByRole("button", { name: "保存设置" }).click();

@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld("folio", {
   exportHistory: (data) => invoke("history:export", data),
   bootstrap: () => invoke("bootstrap"),
   saveSettings: (data) => invoke("settings:save", data),
+  revealKey: () => invoke("settings:reveal"),
+  testConnection: (data) => invoke("settings:test", data),
   listRepo: (path) => invoke("repo:list", path),
   importRepo: async (path, onProgress) => {
     const listener = (_event, progress) => {

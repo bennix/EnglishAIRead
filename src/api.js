@@ -29,6 +29,8 @@ export const api = window.folio || {
   ...Object.fromEntries(
     [
       "saveSettings",
+      "revealKey",
+      "testConnection",
       "listRepo",
       "importRepo",
       "importFile",

@@ -202,6 +202,32 @@ function registerHandlers() {
     progress,
     vocabulary,
   }));
+  bind("settings:reveal", () => getKey());
+  bind("settings:test", async (input = {}) => {
+    const key = input.apiKey || getKey();
+    const model = input.model || settings.model;
+    if (typeof key !== "string" || key.length > 4096 || /\s/.test(key))
+      throw new Error("API Key 不能包含空格或换行。");
+    if (typeof model !== "string" || !/^[\w./:-]{1,120}$/.test(model))
+      throw new Error("模型名称无效。");
+    let response;
+    const started = Date.now();
+    try {
+      response = await fetch(BASE_URL + "/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: [{ role: "user", content: "Reply only OK." }], max_tokens: 32 }),
+        signal: AbortSignal.timeout(30000),
+      });
+    } catch {
+      throw new Error("连接超时或网络不可用，请重试。");
+    }
+    if (!response.ok) throw await aiError(response, key);
+    const body = await response.json();
+    if (!body.choices?.[0]?.message?.content)
+      throw new Error("接口已响应，但模型未返回文字，暂不能确认可用。");
+    return { model, milliseconds: Date.now() - started };
+  });
   bind("settings:save", (input) => {
     if (
       !input ||

@@ -2079,7 +2079,28 @@ function SettingsPage({ settings, onSaved, notify }) {
     [newModel, setNewModel] = useState(""),
     [show, setShow] = useState(false),
     [removeKey, setRemoveKey] = useState(false),
+    [revealedKey, setRevealedKey] = useState(""),
+    [testing, setTesting] = useState(false),
+    [connection, setConnection] = useState(null),
     [busy, setBusy] = useState(false);
+  useEffect(() => { setConnection(null); }, [key, model, removeKey]);
+  const toggleKey = async () => {
+    if (show) { setShow(false); setRevealedKey(""); return; }
+    try {
+      if (!key && settings.hasApiKey && !removeKey)
+        setRevealedKey(await api.revealKey());
+      setShow(true);
+    } catch (e) { notify(e.message, true); }
+  };
+  const testConnection = async () => {
+    setTesting(true);
+    setConnection(null);
+    try {
+      const result = await api.testConnection({ apiKey: key.trim(), model });
+      setConnection({ ok: true, text: `连接成功 · ${result.model} · ${(result.milliseconds / 1000).toFixed(1)} 秒` });
+    } catch (e) { setConnection({ ok: false, text: e.message }); }
+    finally { setTesting(false); }
+  };
   const addModel = () => {
     const value = newModel.trim();
     if (!/^[\w./:-]{1,120}$/.test(value)) {
@@ -2102,6 +2123,7 @@ function SettingsPage({ settings, onSaved, notify }) {
       );
       setKey("");
       setShow(false);
+      setRevealedKey("");
       setRemoveKey(false);
       notify("设置已永久保存在本机");
     } catch (e) {
@@ -2147,8 +2169,8 @@ function SettingsPage({ settings, onSaved, notify }) {
           <input
             id="api-key"
             type={show ? "text" : "password"}
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
+            value={key || (show ? revealedKey : "")}
+            onChange={(e) => { setKey(e.target.value); setRevealedKey(""); }}
             autoComplete="off"
             spellCheck="false"
             placeholder={
@@ -2159,9 +2181,17 @@ function SettingsPage({ settings, onSaved, notify }) {
           />
           <IconButton
             icon={show ? EyeOff : Eye}
-            label={show ? "隐藏密钥" : "显示本次输入的密钥"}
-            onClick={() => setShow(!show)}
+            label={show ? "隐藏密钥" : "显示密钥"}
+            onClick={toggleKey}
           />
+        </div>
+        <div className="connection-test">
+          <button className="text-button" onClick={testConnection}
+            disabled={testing || busy || removeKey || (!key.trim() && !settings.hasApiKey)}>
+            {testing ? "正在测试…" : "测试连接"}
+          </button>
+          <p className="muted">验证当前密钥与所选模型；会发送一次简短请求，消耗少量额度。新输入的密钥测试后仍需保存。</p>
+          {connection && <p role="status" className={connection.ok ? "connection-success" : "connection-error"}>{connection.text}</p>}
         </div>
         {settings.hasApiKey && (
           <label className="remove-key">
@@ -2198,7 +2228,7 @@ function SettingsPage({ settings, onSaved, notify }) {
           <ShieldCheck size={16} />
           <p>
             API Key
-            通过系统安全存储加密，界面不会回显已保存的密钥。模型请求由桌面主进程发送，文章与所选附件仅在调用
+            通过系统安全存储加密，默认隐藏；点击眼睛可查看，离开设置后隐藏。模型请求由桌面主进程发送，文章与所选附件仅在调用
             AI 时传给 ZenMux。
             {!settings.secureStorage && " 当前环境没有可用的系统安全存储。"}
           </p>
