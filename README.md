@@ -52,6 +52,7 @@ npm run dist   # 安装包：macOS DMG/ZIP、Windows NSIS、Linux AppImage/DEB/R
 内置模型：
 
 - `anthropic/claude-sonnet-4.6`
+- `anthropic/claude-sonnet-5`
 - `z-ai/glm-5v-turbo`
 - `openai/gpt-5.4`
 

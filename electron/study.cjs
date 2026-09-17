@@ -181,10 +181,22 @@ function registerStudy({
     } catch {
       throw new Error("AI 请求超时或网络不可用，请重试。");
     }
-    if (!response.ok)
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const errorBody = await response.clone().json();
+        detail =
+          errorBody.error?.message ||
+          errorBody.message ||
+          errorBody.error ||
+          "";
+      } catch {
+        /* gateway may return no JSON */
+      }
       throw new Error(
-        `AI 请求失败（${response.status}）。请检查密钥、额度及模型的图片支持能力。`,
+        `AI 请求失败（${response.status}）。${detail ? String(detail).slice(0, 300) : "请检查密钥、额度及模型的图片支持能力。"}`,
       );
+    }
     const body = await response.json(),
       content = body.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim())

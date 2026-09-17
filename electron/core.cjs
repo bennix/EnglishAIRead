@@ -3,6 +3,7 @@ const cheerio = require("cheerio");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const MODELS = [
+  "anthropic/claude-sonnet-5",
   "anthropic/claude-sonnet-4.6",
   "z-ai/glm-5v-turbo",
   "openai/gpt-5.4",

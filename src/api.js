@@ -9,6 +9,7 @@ export const api = window.folio || {
   bootstrap: async () => ({
     settings: {
       models: [
+        "anthropic/claude-sonnet-5",
         "anthropic/claude-sonnet-4.6",
         "z-ai/glm-5v-turbo",
         "openai/gpt-5.4",

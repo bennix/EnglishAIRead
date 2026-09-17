@@ -102,9 +102,18 @@ async function askAI(messages, validator) {
       403: "当前 API Key 无权访问此模型。",
       429: "请求过于频繁或额度不足，请稍后重试。",
     };
-    throw new Error(
+    let detail = "";
+    try {
+      const body = await response.clone().json();
+      detail = body.error?.message || body.message || body.error || "";
+    } catch {
+      /* some gateways return an empty/non-JSON body */
+    }
+    const hint =
       messages[response.status] ||
-        `ZenMux 请求失败（HTTP ${response.status}），请检查模型名称或稍后重试。`,
+      `ZenMux 请求失败（HTTP ${response.status}）。`;
+    throw new Error(
+      `${hint}${detail ? ` ${String(detail).slice(0, 300)}` : " 请检查 API Key、模型名称和额度。"}`,
     );
   }
   const body = await response.json();
