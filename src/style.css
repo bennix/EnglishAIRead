@@ -1208,6 +1208,11 @@ h1 {
 .writing-feedback .section-title {
   margin: 24px 0 10px;
 }
+.sample-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .sample-summary {
   font:
     15px/1.9 Georgia,
@@ -1367,35 +1372,92 @@ h1 {
 .markdown-content {
   white-space: normal;
 }
-.markdown-content > :first-child { margin-top: 0; }
-.markdown-content > :last-child { margin-bottom: 0; }
-.markdown-content p { margin: 0 0 0.85em; }
-.markdown-content h1, .markdown-content h2, .markdown-content h3,
-.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+.markdown-content p {
+  margin: 0 0 0.85em;
+}
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
   font-size: 1.12em;
   line-height: 1.5;
   margin: 1.2em 0 0.5em;
 }
-.markdown-content ul, .markdown-content ol { padding-left: 1.6em; margin: 0.6em 0; }
-.markdown-content li { margin: 0.3em 0; }
-.markdown-content li > p { margin-bottom: 0.3em; }
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.6em;
+  margin: 0.6em 0;
+}
+.markdown-content li {
+  margin: 0.3em 0;
+}
+.markdown-content li > p {
+  margin-bottom: 0.3em;
+}
 .markdown-content blockquote {
   margin: 0.8em 0;
   padding-left: 1em;
   border-left: 3px solid #a4b296;
   color: #536946;
 }
-.markdown-content code { background: #e8eedf; padding: 0.12em 0.3em; border-radius: 3px; }
-.markdown-content pre { overflow-x: auto; padding: 12px; background: #e8eedf; border-radius: 7px; white-space: pre; }
-.markdown-content pre code { padding: 0; background: none; }
-.markdown-content table { display: block; overflow-x: auto; border-collapse: collapse; margin: 0.8em 0; }
-.markdown-content th, .markdown-content td { border: 1px solid #cdd6c4; padding: 6px 10px; }
-.markdown-content th { background: #e8eedf; }
-.markdown-content a { color: #365d3e; text-decoration: underline; }
-.connection-test { margin: 12px 0; font-size: 12px; line-height: 1.6; }
-.connection-test p { margin: 8px 0; overflow-wrap: anywhere; white-space: pre-wrap; }
-.connection-success { color: #365d3e; }
-.connection-error { color: #a13f2f; }
+.markdown-content code {
+  background: #e8eedf;
+  padding: 0.12em 0.3em;
+  border-radius: 3px;
+}
+.markdown-content pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: #e8eedf;
+  border-radius: 7px;
+  white-space: pre;
+}
+.markdown-content pre code {
+  padding: 0;
+  background: none;
+}
+.markdown-content table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.8em 0;
+}
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #cdd6c4;
+  padding: 6px 10px;
+}
+.markdown-content th {
+  background: #e8eedf;
+}
+.markdown-content a {
+  color: #365d3e;
+  text-decoration: underline;
+}
+.connection-test {
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.connection-test p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.connection-success {
+  color: #365d3e;
+}
+.connection-error {
+  color: #a13f2f;
+}
 .message-model {
   font-size: 8px;
   color: #a4b296;

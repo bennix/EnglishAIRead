@@ -82,6 +82,8 @@ test("writing feedback uses the selected level and transparent calibrated rubric
   assert.match(messages[0].content, /Gaokao level/);
   assert.match(messages[0].content, /must not receive below 70/);
   assert.match(messages[0].content, /grouping examples/);
+  assert.match(messages[0].content, /26–30 an accurate central claim/);
+  assert.match(messages[0].content, /evidence rather than separate required/);
   const result = c.validateWritingFeedback(
     {
       score: 1,

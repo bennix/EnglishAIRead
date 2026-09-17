@@ -1554,8 +1554,25 @@ function Writing({
             ))}
           </ul>
           <div className="section-title">
-            <h4>参考概要</h4>
-            <CopyButton text={practice.feedback.sample} notify={notify} />
+            <h4>参考概要 · {wordCount(practice.feedback.sample)} words</h4>
+            <div className="sample-actions">
+              <button
+                className="button secondary small"
+                onClick={() => {
+                  updatePractice({
+                    draft: practice.feedback.sample,
+                    writingMode: "text",
+                  });
+                  notify(
+                    `已用参考概要替换草稿（${wordCount(practice.feedback.sample)} 词）`,
+                  );
+                }}
+              >
+                <Type size={13} />
+                替换草稿
+              </button>
+              <CopyButton text={practice.feedback.sample} notify={notify} />
+            </div>
           </div>
           <p className="sample-summary">{practice.feedback.sample}</p>
         </div>

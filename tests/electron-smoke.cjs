@@ -249,6 +249,8 @@ const summary =
     await page.getByRole("button", { name: "获取 AI 写作反馈" }).click();
     await expect(page.locator(".score")).toContainText("87");
     await expect(page.locator(".score")).toContainText("托福标准");
+    await page.getByRole("button", { name: "替换草稿" }).click();
+    await expect(page.locator("#draft")).toHaveValue(summary);
     // Synthetic photo fixture; the vision response is mocked like the other AI calls.
     const photoFile = path.join(TEST_DATA, "handwriting-test.png");
     const { createCanvas } = require("@napi-rs/canvas");
