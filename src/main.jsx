@@ -698,6 +698,7 @@ function Reader({
     lookupRef = useRef(0);
   modeRef.current = mode;
   const scrollRef = useRef(null),
+    articleRef = useRef(null),
     dragRef = useRef(null);
   const [pageWidth, setPageWidth] = useState(0);
   useEffect(() => {
@@ -762,7 +763,11 @@ function Reader({
     }));
   const selectWord = () => {
     if (mode !== "reading" || panning) return;
-    const text = window.getSelection()?.toString().trim();
+    const selected = window.getSelection();
+    const text = selected?.toString().trim();
+    const range = selected?.rangeCount ? selected.getRangeAt(0) : null;
+    if (range && !articleRef.current?.contains(range.commonAncestorContainer))
+      return;
     if (text && /^[A-Za-z][A-Za-z ’'’-]{0,79}$/.test(text)) {
       lookupRef.current++;
       setDefinition(null);
@@ -880,7 +885,9 @@ function Reader({
           }}
         >
           <article
+            ref={articleRef}
             className="article-body"
+            onPointerUp={selectWord}
             onMouseUp={selectWord}
             onKeyUp={selectWord}
             style={{
@@ -960,7 +967,7 @@ function Reader({
             {panning
               ? "拖拽平移已开启"
               : mode === "reading"
-                ? "选词可查询"
+                ? "选中英文单词或短语，即可查询并加入生词本"
                 : "查词已禁用"}
           </span>
         </div>
@@ -1289,7 +1296,17 @@ function Writing({
     }
   };
   const review = async () => {
+    if (inputMode === "text" && (count < 100 || count > 200)) {
+      notify(
+        count < 100
+          ? `当前 ${count} 词，还需 ${100 - count} 词才能提交。`
+          : `当前 ${count} 词，请减少 ${count - 200} 词后提交。`,
+        true,
+      );
+      return;
+    }
     setBusy(true);
+    updatePractice({ feedback: null });
     try {
       const feedback = await api.reviewSummary({
         articleId: article.id,
@@ -1455,7 +1472,7 @@ function Writing({
           busy ||
           adding ||
           !settings.hasApiKey ||
-          (inputMode === "image" ? !photos.length : count < 100 || count > 200)
+          (inputMode === "image" && !photos.length)
         }
         onClick={review}
       >
@@ -1707,15 +1724,30 @@ function Chat({ article, progress, update, notify, settings }) {
                     ))}
                   </div>
                 )}
-                <div className={cn("message-content", m.role === "assistant" && "markdown-content")}>
+                <div
+                  className={cn(
+                    "message-content",
+                    m.role === "assistant" && "markdown-content",
+                  )}
+                >
                   {m.role === "assistant" ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      skipHtml
                       components={{
                         img: ({ alt }) => <span>{alt || "图片"}</span>,
-                        a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+                        a: ({ children, href }) => (
+                          <a href={href} target="_blank" rel="noreferrer">
+                            {children}
+                          </a>
+                        ),
                       }}
-                    >{m.content}</ReactMarkdown>
-                  ) : m.content}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  ) : (
+                    m.content
+                  )}
                 </div>
                 {m.model && (
                   <small className="message-model">
@@ -2083,23 +2115,37 @@ function SettingsPage({ settings, onSaved, notify }) {
     [testing, setTesting] = useState(false),
     [connection, setConnection] = useState(null),
     [busy, setBusy] = useState(false);
-  useEffect(() => { setConnection(null); }, [key, model, removeKey]);
+  useEffect(() => {
+    setConnection(null);
+  }, [key, model, removeKey]);
   const toggleKey = async () => {
-    if (show) { setShow(false); setRevealedKey(""); return; }
+    if (show) {
+      setShow(false);
+      setRevealedKey("");
+      return;
+    }
     try {
       if (!key && settings.hasApiKey && !removeKey)
         setRevealedKey(await api.revealKey());
       setShow(true);
-    } catch (e) { notify(e.message, true); }
+    } catch (e) {
+      notify(e.message, true);
+    }
   };
   const testConnection = async () => {
     setTesting(true);
     setConnection(null);
     try {
       const result = await api.testConnection({ apiKey: key.trim(), model });
-      setConnection({ ok: true, text: `连接成功 · ${result.model} · ${(result.milliseconds / 1000).toFixed(1)} 秒` });
-    } catch (e) { setConnection({ ok: false, text: e.message }); }
-    finally { setTesting(false); }
+      setConnection({
+        ok: true,
+        text: `连接成功 · ${result.model} · ${(result.milliseconds / 1000).toFixed(1)} 秒`,
+      });
+    } catch (e) {
+      setConnection({ ok: false, text: e.message });
+    } finally {
+      setTesting(false);
+    }
   };
   const addModel = () => {
     const value = newModel.trim();
@@ -2170,7 +2216,10 @@ function SettingsPage({ settings, onSaved, notify }) {
             id="api-key"
             type={show ? "text" : "password"}
             value={key || (show ? revealedKey : "")}
-            onChange={(e) => { setKey(e.target.value); setRevealedKey(""); }}
+            onChange={(e) => {
+              setKey(e.target.value);
+              setRevealedKey("");
+            }}
             autoComplete="off"
             spellCheck="false"
             placeholder={
@@ -2186,12 +2235,31 @@ function SettingsPage({ settings, onSaved, notify }) {
           />
         </div>
         <div className="connection-test">
-          <button className="text-button" onClick={testConnection}
-            disabled={testing || busy || removeKey || (!key.trim() && !settings.hasApiKey)}>
+          <button
+            className="text-button"
+            onClick={testConnection}
+            disabled={
+              testing ||
+              busy ||
+              removeKey ||
+              (!key.trim() && !settings.hasApiKey)
+            }
+          >
             {testing ? "正在测试…" : "测试连接"}
           </button>
-          <p className="muted">验证当前密钥与所选模型；会发送一次简短请求，消耗少量额度。新输入的密钥测试后仍需保存。</p>
-          {connection && <p role="status" className={connection.ok ? "connection-success" : "connection-error"}>{connection.text}</p>}
+          <p className="muted">
+            验证当前密钥与所选模型；会发送一次简短请求，消耗少量额度。新输入的密钥测试后仍需保存。
+          </p>
+          {connection && (
+            <p
+              role="status"
+              className={
+                connection.ok ? "connection-success" : "connection-error"
+              }
+            >
+              {connection.text}
+            </p>
+          )}
         </div>
         {settings.hasApiKey && (
           <label className="remove-key">
@@ -2206,7 +2274,9 @@ function SettingsPage({ settings, onSaved, notify }) {
         <div className="invite-card">
           <span>订阅用户请使用 sk-ss-v1- 开头的完整订阅 API Key。</span>
           <button
-            onClick={() => api.openExternal("https://zenmux.ai/platform/subscription")}
+            onClick={() =>
+              api.openExternal("https://zenmux.ai/platform/subscription")
+            }
           >
             获取订阅密钥 <ArrowUpRight size={14} />
           </button>

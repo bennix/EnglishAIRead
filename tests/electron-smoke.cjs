@@ -91,7 +91,7 @@ const summary =
               explanation: "原文支持第一个选项。",
             })),
           };
-        else if (system.includes("HANDWRITTEN"))
+        else if (system.includes("printed text, screenshots"))
           output = {
             readable: true,
             transcription: summary,
@@ -326,7 +326,7 @@ const summary =
       "All AI requests must use model defaults without a temperature parameter");
     assert.ok(requests.every((r) => r.model === "anthropic/claude-sonnet-5"));
     const handwritingRequest = requests.find((r) =>
-      r.messages[0].content.includes("HANDWRITTEN"),
+      r.messages[0].content.includes("printed text, screenshots"),
     );
     assert.ok(
       handwritingRequest.messages[1].content.some(

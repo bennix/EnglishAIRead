@@ -18,13 +18,13 @@ async function ingestAttachment(dataDir, name, buffer) {
     if (image.isEmpty()) throw new Error("无法读取这张图片。");
     attachment.type = "image";
     const size = image.getSize(),
-      ratio = Math.min(1, 1800 / Math.max(size.width, size.height));
+      ratio = Math.min(1, 3200 / Math.max(size.width, size.height));
     const reduced = image.resize({
       width: Math.round(size.width * ratio),
       height: Math.round(size.height * ratio),
     });
     attachment.dataUrl =
-      "data:image/jpeg;base64," + reduced.toJPEG(85).toString("base64");
+      "data:image/jpeg;base64," + reduced.toJPEG(94).toString("base64");
     attachment.thumbnail =
       "data:image/jpeg;base64," +
       image.resize({ width: 160 }).toJPEG(65).toString("base64");

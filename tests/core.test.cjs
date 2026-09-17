@@ -104,6 +104,13 @@ test("handwriting feedback refuses unreadable images and computes transparent ru
   const result = c.validateHandwritingFeedback(data);
   assert.equal(result.score, 88);
   assert.equal(result.recognizedWordCount, 120);
+  const conservativeModelResult = c.validateHandwritingFeedback({
+    ...data,
+    readable: false,
+    transcription: "word ".repeat(93),
+  });
+  assert.equal(conservativeModelResult.recognizedWordCount, 93);
+  assert.equal(conservativeModelResult.criteria.length, 0);
   const short = c.validateHandwritingFeedback({
     ...data,
     transcription: "word ".repeat(80),
@@ -123,6 +130,8 @@ test("handwritten submission uses the photos and source article, not a typed dra
     [{ dataUrl: "data:image/jpeg;base64,fixture" }],
     "高考",
   );
+  assert.match(messages[0].content, /printed text, screenshots/);
+  assert.match(messages[0].content, /at least five English words/);
   assert.equal(
     JSON.parse(messages[1].content[0].text).sourceArticle,
     "The current source article.",
