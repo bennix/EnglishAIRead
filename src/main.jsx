@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Library,
   BookOpen,
@@ -1705,7 +1707,16 @@ function Chat({ article, progress, update, notify, settings }) {
                     ))}
                   </div>
                 )}
-                <div className="message-content">{m.content}</div>
+                <div className={cn("message-content", m.role === "assistant" && "markdown-content")}>
+                  {m.role === "assistant" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml
+                      components={{
+                        img: ({ alt }) => <span>{alt || "图片"}</span>,
+                        a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a>,
+                      }}
+                    >{m.content}</ReactMarkdown>
+                  ) : m.content}
+                </div>
                 {m.model && (
                   <small className="message-model">
                     {m.model.split("/").pop()}
