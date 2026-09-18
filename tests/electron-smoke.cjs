@@ -160,6 +160,30 @@ const summary =
         else
           output =
             "## 核心观点\n\n这份材料其实**不是一篇完整的文章**，而是一个**杂志文章标题列表**。\n\n**证据**：\n\n- 每一行都是独立标题\n- 附件已作为参考资料读取\n\n| 项目 | 说明 |\n| --- | --- |\n| 内容 | 文章目录 |\n\n```text\nReading notes\n```\n\n<script>window.markdownUnsafe = true</script>";
+        if (request.stream) {
+          const content =
+            typeof output === "string" ? output : JSON.stringify(output);
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream({
+              async start(controller) {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`,
+                  ),
+                );
+                await new Promise((resolve) => setTimeout(resolve, 700));
+                controller.enqueue(
+                  encoder.encode(
+                    'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+                  ),
+                );
+                controller.close();
+              },
+            }),
+            { headers: { "Content-Type": "text/event-stream" } },
+          );
+        }
         return new Response(
           JSON.stringify({
             choices: [
@@ -262,6 +286,12 @@ const summary =
     }, article.id);
     assert.equal(guard, true);
     await page.getByRole("button", { name: "生成 5 道阅读题" }).click();
+    await expect(page.locator(".generation-preview")).toContainText(
+      "What does the selected article suggest?",
+    );
+    await expect(page.locator(".generation-preview")).not.toContainText(
+      "原文支持第一个选项",
+    );
     await expect(page.locator(".question")).toHaveCount(5);
     for (let i = 0; i < 5; i++)
       await page
@@ -396,6 +426,9 @@ const summary =
     await expect(page.locator(".chat-composer .attachment img")).toHaveCount(1);
     await page.getByLabel("AI 追问内容").fill("结合文章与附件解释核心观点。");
     await page.getByRole("button", { name: "发送消息", exact: true }).click();
+    await expect(page.locator(".generation-preview pre")).toContainText(
+      "## 核心观点",
+    );
     await expect(page.locator(".message.assistant")).toHaveCount(1);
     const markdown = page.locator(".message.assistant .markdown-content");
     await expect(markdown.locator("strong")).toHaveCount(3);

@@ -1210,18 +1210,27 @@ function QuizExercise({
   setGenerating,
 }) {
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [streamError, setStreamError] = useState("");
   const generate = async () => {
     setBusy(true);
+    setPreview({ text: "", received: 0 });
+    setStreamError("");
     setGenerating(true);
     try {
-      const quiz = await api.generateQuiz({
-        articleId: article.id,
-        level,
-        type,
-        count,
-      });
+      const quiz = await api.generateQuiz(
+        {
+          articleId: article.id,
+          level,
+          type,
+          count,
+        },
+        setPreview,
+      );
       updatePractice({ quiz, answers: {}, submitted: false });
+      setPreview(null);
     } catch (e) {
+      setStreamError(e.message);
       notify(e.message, true);
     } finally {
       setBusy(false);
@@ -1230,6 +1239,32 @@ function QuizExercise({
   };
   const answers = practice.answers || {},
     answered = Object.keys(answers).length;
+  if (busy || preview)
+    return (
+      <div className="generation-preview">
+        <h4>{busy ? "正在生成并组装题目…" : "生成未完成"}</h4>
+        <p>
+          {preview?.received
+            ? `已接收 ${preview.received} 个字符 · 完成后自动组装为可作答题目`
+            : "等待模型开始输出…"}
+        </p>
+        <pre>{preview?.text || "正在准备短文、题干和选项…"}</pre>
+        {streamError && (
+          <>
+            <p role="alert">{streamError}</p>
+            <button
+              className="button secondary"
+              onClick={() => {
+                setPreview(null);
+                setStreamError("");
+              }}
+            >
+              返回练习
+            </button>
+          </>
+        )}
+      </div>
+    );
   if (!practice.quiz)
     return (
       <div className="quiz-empty">
@@ -1729,6 +1764,8 @@ function CopyButton({ text, notify }) {
   );
 }
 function Chat({ article, progress, update, notify, settings }) {
+  const [streamText, setStreamText] = useState("");
+  const [streamError, setStreamError] = useState("");
   const [text, setText] = useState(""),
     [attachments, setAttachments] = useState([]),
     [busy, setBusy] = useState(false),
@@ -1737,7 +1774,7 @@ function Chat({ article, progress, update, notify, settings }) {
   const messages = progress.chat || [];
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [messages.length, busy]);
+  }, [messages.length, busy, streamText]);
   const append = (items) =>
     setAttachments((previous) => {
       if (previous.length + items.length > 4) {
@@ -1785,15 +1822,22 @@ function Chat({ article, progress, update, notify, settings }) {
     const user = { role: "user", content: text.trim(), attachments };
     const next = [...messages, user];
     setBusy(true);
+    setStreamText("");
+    setStreamError("");
     try {
-      const result = await api.chat({
-        articleId: article.id,
-        messages: next.slice(-30),
-      });
+      const result = await api.chat(
+        {
+          articleId: article.id,
+          messages: next.slice(-30),
+        },
+        ({ delta }) => setStreamText((previous) => previous + (delta || "")),
+      );
       update({ chat: [...next, result] });
+      setStreamText("");
       setText("");
       setAttachments([]);
     } catch (e) {
+      setStreamError(e.message);
       notify(e.message, true);
     } finally {
       setBusy(false);
@@ -1902,7 +1946,18 @@ function Chat({ article, progress, update, notify, settings }) {
             ))}
           </>
         )}
-        {busy && (
+        {(busy || streamText || streamError) && (
+          <div className="generation-preview">
+            <strong>{busy ? "AI 正在回答…" : "回答未完成"}</strong>
+            {streamText && <pre>{streamText}</pre>}
+            {streamError && (
+              <p role="alert">
+                {streamError}（以上为未完成内容，未保存为正式回答。）
+              </p>
+            )}
+          </div>
+        )}
+        {busy && !streamText && (
           <div className="thinking">
             <LoaderCircle className="spin" size={16} />
             正在阅读和思考…

@@ -4,13 +4,26 @@ const invoke = async (channel, data) => {
   if (!result.ok) throw new Error(result.error);
   return result.data;
 };
+const streamInvoke = async (channel, data, onProgress) => {
+  const requestId = globalThis.crypto.randomUUID();
+  const listener = (_event, progress) => {
+    if (progress.requestId === requestId && typeof onProgress === "function")
+      onProgress(progress);
+  };
+  ipcRenderer.on("ai:progress", listener);
+  try {
+    return await invoke(channel, { ...data, requestId });
+  } finally {
+    ipcRenderer.removeListener("ai:progress", listener);
+  }
+};
 contextBridge.exposeInMainWorld("folio", {
   chooseAttachments: () => invoke("attachment:choose"),
   chooseImages: () => invoke("attachment:choose", { imagesOnly: true }),
   addAttachment: (data) => invoke("attachment:add", data),
   pasteAttachments: () => invoke("attachment:paste"),
   copyText: (text) => invoke("clipboard:write", text),
-  chat: (data) => invoke("ai:chat", data),
+  chat: (data, onProgress) => streamInvoke("ai:chat", data, onProgress),
   lookupWord: (data) => invoke("ai:word", data),
   saveWord: (data) => invoke("vocabulary:save", data),
   deleteWord: (word) => invoke("vocabulary:delete", word),
@@ -37,7 +50,7 @@ contextBridge.exposeInMainWorld("folio", {
   importFile: () => invoke("file:import"),
   addArticle: (data) => invoke("article:add", data),
   saveProgress: (data) => invoke("progress:save", data),
-  generateQuiz: (data) => invoke("ai:quiz", data),
+  generateQuiz: (data, onProgress) => streamInvoke("ai:quiz", data, onProgress),
   reviewSummary: (data) => invoke("ai:feedback", data),
   openExternal: (url) => invoke("external:open", url),
 });

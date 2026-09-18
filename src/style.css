@@ -2573,3 +2573,23 @@ h1 {
   font-size: 14px;
   line-height: 1.8;
 }
+
+.generation-preview {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.generation-preview p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.generation-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.8;
+  max-height: 420px;
+  overflow-y: auto;
+}

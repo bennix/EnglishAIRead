@@ -11,6 +11,7 @@ const path = require("node:path");
 const core = require("./core.cjs");
 const { aiError } = require("./ai-error.cjs");
 const { requestAI } = require("./ai-request.cjs");
+const { quizPreview } = require("./quiz-preview.cjs");
 const { downloadBook } = require("./download.cjs");
 const { importBook, articleFromPdf } = require("./books.cjs");
 const sample = require("./sample.json");
@@ -75,13 +76,15 @@ function articleById(id) {
 function levelCheck(level) {
   if (!core.LEVELS.includes(level)) throw new Error("请选择有效的考试难度。");
 }
-async function askAI(messages, validator) {
+async function askAI(messages, validator, onDelta) {
   const key = getKey();
   const model = settings.model;
-  const body = await requestAI({ key, model, messages });
+  const body = await requestAI({ key, model, messages, onDelta });
   return {
     ...validator(core.parseJson(body.choices?.[0]?.message?.content)),
     model,
+    usage: body.usage,
+    finishReason: body.choices?.[0]?.finish_reason,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -344,13 +347,27 @@ function registerHandlers() {
   });
   bind(
     "ai:quiz",
-    async ({ articleId, level, type = "reading", count = 15 }) => {
+    async ({ articleId, level, type = "reading", count = 15, requestId }) => {
       levelCheck(level);
       const article = articleById(articleId);
       if (article.text.length > 60000)
         throw new Error("文章过长，请摘选一篇独立文章（最多 6 万字符）。");
-      return askAI(core.quizMessages(article, level, type, count), (data) =>
-        core.validateQuiz(data, type, count),
+      let text = "",
+        lastSent = 0;
+      return askAI(
+        core.quizMessages(article, level, type, count),
+        (data) => core.validateQuiz(data, type, count),
+        (delta) => {
+          text += delta;
+          if (requestId && !win.isDestroyed() && Date.now() - lastSent >= 100) {
+            lastSent = Date.now();
+            win.webContents.send("ai:progress", {
+              requestId,
+              text: quizPreview(text),
+              received: text.length,
+            });
+          }
+        },
       );
     },
   );

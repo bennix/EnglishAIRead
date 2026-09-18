@@ -117,7 +117,7 @@ function registerStudy({
     await clipboard.writeText(text);
     return true;
   });
-  bind("ai:chat", async ({ articleId, messages }) => {
+  bind("ai:chat", async ({ articleId, messages, requestId }) => {
     const article = articleById(articleId);
     if (!Array.isArray(messages) || !messages.length || messages.length > 40)
       throw new Error("对话过长，请开启新的追问。");
@@ -172,12 +172,22 @@ function registerStudy({
         key,
         model,
         messages: request,
-        maxTokens: 4000,
+        onDelta: (delta) => {
+          const window = getWindow();
+          if (requestId && window && !window.isDestroyed())
+            window.webContents.send("ai:progress", { requestId, delta });
+        },
       }),
       content = body.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim())
       throw new Error("模型未返回回答，请重试。");
-    return { role: "assistant", content, model };
+    return {
+      role: "assistant",
+      content,
+      model,
+      usage: body.usage,
+      finishReason: body.choices?.[0]?.finish_reason,
+    };
   });
   bind("ai:word", async ({ articleId, word, mode }) => {
     if (mode !== "reading") throw new Error("练习模式不支持划词查询。");
