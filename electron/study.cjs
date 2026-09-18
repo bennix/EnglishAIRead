@@ -3,7 +3,7 @@ const path = require("node:path");
 const { fileURLToPath } = require("node:url");
 const cheerio = require("cheerio");
 const { dialog, clipboard } = require("electron");
-const { aiError } = require("./ai-error.cjs");
+const { requestAI } = require("./ai-request.cjs");
 const { ingestAttachment, loadAttachment } = require("./attachments.cjs");
 function registerStudy({
   bind,
@@ -168,22 +168,12 @@ function registerStudy({
     if (total > 120000) throw new Error("对话和附件文字过长，请开始新的追问。");
     const key = getKey(),
       model = getModel();
-    let response;
-    try {
-      response = await fetch("https://zenmux.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${key}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ model, messages: request, max_tokens: 4000 }),
-        signal: AbortSignal.timeout(120000),
-      });
-    } catch {
-      throw new Error("AI 请求超时或网络不可用，请重试。");
-    }
-    if (!response.ok) throw await aiError(response, key);
-    const body = await response.json(),
+    const body = await requestAI({
+        key,
+        model,
+        messages: request,
+        maxTokens: 4000,
+      }),
       content = body.choices?.[0]?.message?.content;
     if (typeof content !== "string" || !content.trim())
       throw new Error("模型未返回回答，请重试。");

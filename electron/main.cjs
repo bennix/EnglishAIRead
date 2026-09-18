@@ -10,6 +10,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const core = require("./core.cjs");
 const { aiError } = require("./ai-error.cjs");
+const { requestAI } = require("./ai-request.cjs");
 const { downloadBook } = require("./download.cjs");
 const { importBook, articleFromPdf } = require("./books.cjs");
 const sample = require("./sample.json");
@@ -77,26 +78,7 @@ function levelCheck(level) {
 async function askAI(messages, validator) {
   const key = getKey();
   const model = settings.model;
-  let response;
-  try {
-    response = await fetch(BASE_URL + "/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: 6000,
-      }),
-      signal: AbortSignal.timeout(120000),
-    });
-  } catch {
-    throw new Error("AI 请求超时或网络不可用，请稍后重试。");
-  }
-  if (!response.ok) throw await aiError(response, key);
-  const body = await response.json();
+  const body = await requestAI({ key, model, messages });
   return {
     ...validator(core.parseJson(body.choices?.[0]?.message?.content)),
     model,
