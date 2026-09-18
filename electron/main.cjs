@@ -360,13 +360,18 @@ function registerHandlers() {
     write("progress", progress);
     return true;
   });
-  bind("ai:quiz", async ({ articleId, level }) => {
-    levelCheck(level);
-    const article = articleById(articleId);
-    if (article.text.length > 60000)
-      throw new Error("文章过长，请摘选一篇独立文章（最多 6 万字符）。");
-    return askAI(core.quizMessages(article, level), core.validateQuiz);
-  });
+  bind(
+    "ai:quiz",
+    async ({ articleId, level, type = "reading", count = 15 }) => {
+      levelCheck(level);
+      const article = articleById(articleId);
+      if (article.text.length > 60000)
+        throw new Error("文章过长，请摘选一篇独立文章（最多 6 万字符）。");
+      return askAI(core.quizMessages(article, level, type, count), (data) =>
+        core.validateQuiz(data, type, count),
+      );
+    },
+  );
   bind(
     "ai:feedback",
     async ({ articleId, level, draft, inputMode, images }) => {

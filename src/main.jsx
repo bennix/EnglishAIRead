@@ -1035,7 +1035,7 @@ function Reader({
         <div className="study-tabs">
           {[
             ["chat", "AI 追问"],
-            ["quiz", "阅读理解"],
+            ["quiz", "阅读练习"],
             ["writing", "概要写作"],
           ].map(([key, label]) => (
             <button
@@ -1076,7 +1076,7 @@ function Reader({
               </h3>
               <p>
                 {tab === "quiz"
-                  ? "每篇 5 题，从细节理解到观点推断。"
+                  ? "阅读理解、上海选词填空与完形填空。"
                   : "用 100–200 个英文词，概括文章的核心观点。"}
               </p>
             </div>
@@ -1125,17 +1125,107 @@ function Reader({
     </div>
   );
 }
-function Quiz({ article, level, practice, updatePractice, notify, settings }) {
+const QUIZ_TYPES = {
+  reading: "阅读理解 · 5 题",
+  "word-bank": "上海选词填空 · 11 选 10",
+  cloze: "完形填空",
+};
+function Quiz(props) {
+  const [type, setType] = useState("reading");
+  const [count, setCount] = useState(15);
+  const [generating, setGenerating] = useState(false);
+  const variant = type === "cloze" ? `cloze-${count}` : type;
+  const practice =
+    type === "reading"
+      ? props.practice
+      : props.practice.exercises?.[variant] || {};
+  const updatePractice = (change) =>
+    props.updatePractice(
+      type === "reading"
+        ? change
+        : {
+            exercises: {
+              ...props.practice.exercises,
+              [variant]: { ...practice, ...change },
+            },
+          },
+    );
+  return (
+    <>
+      <div className="exercise-picker">
+        <label>
+          题型
+          <select
+            aria-label="题型"
+            value={type}
+            disabled={generating}
+            onChange={(e) => setType(e.target.value)}
+          >
+            {Object.entries(QUIZ_TYPES).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {type === "cloze" && (
+          <label>
+            空数
+            <select
+              aria-label="完形填空空数"
+              value={count}
+              disabled={generating}
+              onChange={(e) => setCount(Number(e.target.value))}
+            >
+              <option value={15}>15 空</option>
+              <option value={20}>20 空</option>
+            </select>
+          </label>
+        )}
+        <p>
+          {type === "word-bank"
+            ? "250–350 词 · 10 空 · 11 个备选词，每词最多用一次，不改变词形。先判断词性与句法，再结合语境、近义词和搭配选择。点击已选项可取消选择。"
+            : type === "cloze"
+              ? "250–300 词 · 每空四选一。重点考查上下文照应、情感转折、因果关系与熟词生义。"
+              : "每篇 5 道四选一阅读题，覆盖细节、主旨与推断。"}
+        </p>
+      </div>
+      <QuizExercise
+        key={variant}
+        {...props}
+        {...{ type, count, practice, updatePractice, setGenerating }}
+      />
+    </>
+  );
+}
+function QuizExercise({
+  article,
+  level,
+  practice,
+  updatePractice,
+  notify,
+  settings,
+  type,
+  count,
+  setGenerating,
+}) {
   const [busy, setBusy] = useState(false);
   const generate = async () => {
     setBusy(true);
+    setGenerating(true);
     try {
-      const quiz = await api.generateQuiz({ articleId: article.id, level });
+      const quiz = await api.generateQuiz({
+        articleId: article.id,
+        level,
+        type,
+        count,
+      });
       updatePractice({ quiz, answers: {}, submitted: false });
     } catch (e) {
       notify(e.message, true);
     } finally {
       setBusy(false);
+      setGenerating(false);
     }
   };
   const answers = practice.answers || {},
@@ -1145,7 +1235,9 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
       <div className="quiz-empty">
         <div className="exercise-illustration">
           <FileText size={48} strokeWidth={1} />
-          <span>5</span>
+          <span>
+            {type === "reading" ? 5 : type === "word-bank" ? 10 : count}
+          </span>
         </div>
         <h4>为这篇文章，出一套好题</h4>
         <p>
@@ -1163,7 +1255,11 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
           ) : (
             <Sparkles size={16} />
           )}{" "}
-          {busy ? "正在精心出题…" : "生成 5 道阅读题"}
+          {busy
+            ? "正在精心出题…"
+            : type === "reading"
+              ? "生成 5 道阅读题"
+              : `生成${QUIZ_TYPES[type]}${type === "cloze" ? ` · ${count} 空` : ""}`}
         </button>
       </div>
     );
@@ -1172,13 +1268,28 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
       <div className="quiz-status">
         <span>
           {practice.submitted
-            ? `答对 ${practice.quiz.questions.filter((q, i) => answers[i] === q.answer).length} / 5`
-            : `已作答 ${answered} / 5`}
+            ? `答对 ${practice.quiz.questions.filter((q, i) => answers[i] === q.answer).length} / ${practice.quiz.questions.length}`
+            : `已作答 ${answered} / ${practice.quiz.questions.length}`}
         </span>
         <button className="text-button" disabled={busy} onClick={generate}>
           {busy ? "生成中…" : "重新出题"}
         </button>
       </div>
+      {practice.quiz.passage && (
+        <div className="gap-passage">
+          <strong>根据原文改编 · 完整短文 {practice.quiz.wordCount} 词</strong>
+          <p>{practice.quiz.passage}</p>
+          {practice.quiz.wordBank && (
+            <div className="word-bank">
+              {practice.quiz.wordBank.map((word, i) => (
+                <span key={word}>
+                  {"ABCDEFGHIJK"[i]}. {word}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {practice.quiz.questions.map((q, i) => (
         <div className="question" key={i}>
           <h4>
@@ -1189,7 +1300,14 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
             {q.options.map((option, j) => (
               <button
                 key={j}
-                disabled={practice.submitted}
+                disabled={
+                  practice.submitted ||
+                  busy ||
+                  (type === "word-bank" &&
+                    Object.entries(answers).some(
+                      ([index, value]) => Number(index) !== i && value === j,
+                    ))
+                }
                 className={cn(
                   answers[i] === j && "chosen",
                   practice.submitted && q.answer === j && "correct",
@@ -1199,17 +1317,26 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
                     "wrong",
                 )}
                 onClick={() =>
-                  updatePractice({ answers: { ...answers, [i]: j } })
+                  updatePractice({
+                    answers:
+                      answers[i] === j
+                        ? Object.fromEntries(
+                            Object.entries(answers).filter(
+                              ([index]) => Number(index) !== i,
+                            ),
+                          )
+                        : { ...answers, [i]: j },
+                  })
                 }
               >
-                <span>{"ABCD"[j]}</span>
+                <span>{"ABCDEFGHIJK"[j]}</span>
                 {option}
               </button>
             ))}
           </div>
           {practice.submitted && (
             <div className="explanation">
-              <strong>答案 {"ABCD"[q.answer]} · 解析</strong>
+              <strong>答案 {"ABCDEFGHIJK"[q.answer]} · 解析</strong>
               <p>{q.explanation}</p>
             </div>
           )}
@@ -1218,7 +1345,7 @@ function Quiz({ article, level, practice, updatePractice, notify, settings }) {
       {!practice.submitted && (
         <button
           className="button primary full"
-          disabled={answered !== 5}
+          disabled={busy || answered !== practice.quiz.questions.length}
           onClick={() => updatePractice({ submitted: true })}
         >
           提交答案
@@ -2024,7 +2151,10 @@ function HistoryPage({ library, progress, openArticle, notify, onDeleted }) {
                   {Object.entries(p.practices || {}).map(([level, item]) => (
                     <span key={level}>
                       {level}
-                      {item.submitted
+                      {item.submitted ||
+                      Object.values(item.exercises || {}).some(
+                        (e) => e.submitted,
+                      )
                         ? " · 已作答"
                         : item.feedback
                           ? " · 写作已批阅"
@@ -2032,7 +2162,10 @@ function HistoryPage({ library, progress, openArticle, notify, onDeleted }) {
                             ? " · 手写草稿"
                             : item.draft
                               ? " · 写作草稿"
-                              : item.quiz
+                              : item.quiz ||
+                                  Object.values(item.exercises || {}).some(
+                                    (e) => e.quiz,
+                                  )
                                 ? " · 已出题"
                                 : " · 写作练习"}
                     </span>

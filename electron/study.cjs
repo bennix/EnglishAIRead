@@ -276,14 +276,25 @@ function registerStudy({
             article.text,
           ];
           for (const [level, practice] of Object.entries(p.practices || {})) {
-            sections.push(`## ${level} · 阅读理解`);
-            (practice.quiz?.questions || []).forEach((q, i) =>
+            for (const [kind, exercise] of [
+              ["阅读理解", practice],
+              ...Object.entries(practice.exercises || {}),
+            ]) {
+              if (!exercise.quiz) continue;
               sections.push(
-                `${i + 1}. ${q.question}\n` +
-                  q.options.map((o, j) => `${"ABCD"[j]}. ${o}`).join("\n") +
-                  `\n正确答案：${"ABCD"[q.answer]}；我的答案：${"ABCD"[practice.answers?.[i]] || "未作答"}\n${q.explanation}`,
-              ),
-            );
+                `## ${level} · ${{ "word-bank": "上海选词填空 · 11 选 10", "cloze-15": "完形填空 · 15 空", "cloze-20": "完形填空 · 20 空" }[kind] || kind}`,
+              );
+              if (exercise.quiz.passage) sections.push(exercise.quiz.passage);
+              (exercise.quiz.questions || []).forEach((q, i) =>
+                sections.push(
+                  `${i + 1}. ${q.question}\n` +
+                    q.options
+                      .map((o, j) => `${"ABCDEFGHIJK"[j]}. ${o}`)
+                      .join("\n") +
+                    `\n正确答案：${"ABCDEFGHIJK"[q.answer]}；我的答案：${"ABCDEFGHIJK"[exercise.answers?.[i]] || "未作答"}\n${q.explanation}`,
+                ),
+              );
+            }
             if (practice.draft) sections.push("## 概要写作", practice.draft);
             if (practice.writingImages?.length)
               sections.push(

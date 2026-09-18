@@ -77,7 +77,36 @@ const summary =
         global.__requests.push(request);
         const system = request.messages[0].content;
         let output;
-        if (system.includes("exactly five"))
+        if (
+          system.includes("Shanghai Gaokao word-bank task") ||
+          system.includes("Cloze task:")
+        ) {
+          const bank = system.includes("Shanghai Gaokao word-bank task");
+          const count = bank ? 10 : system.includes("exactly 20") ? 20 : 15;
+          output = {
+            passage:
+              "context ".repeat(270 - count) +
+              Array.from({ length: count }, (_, i) => `[[${i + 1}]]`).join(" "),
+            wordBank: [
+              "growth",
+              "steady",
+              "rapid",
+              "develop",
+              "clearly",
+              "effort",
+              "support",
+              "deep",
+              "nearly",
+              "change",
+              "purpose",
+            ],
+            questions: Array.from({ length: count }, (_, i) => ({
+              options: ["one", "two", "three", "four"],
+              answer: bank ? i : 0,
+              explanation: "上下文与搭配依据。",
+            })),
+          };
+        } else if (system.includes("exactly five"))
           output = {
             questions: Array.from({ length: 5 }, (_, i) => ({
               question: "What does the selected article suggest? " + (i + 1),
@@ -244,6 +273,60 @@ const summary =
     await page.getByRole("button", { name: "提交答案" }).click();
     await expect(page.locator(".quiz-status")).toContainText("5 / 5");
     await page.screenshot({ path: path.join(ROOT, "artifacts/quiz.png") });
+    for (const type of ["word-bank", "cloze"]) {
+      await page.getByLabel("题型", { exact: true }).selectOption(type);
+      if (type === "cloze")
+        await page.getByLabel("完形填空空数").selectOption("20");
+      await page
+        .getByRole("button", {
+          name:
+            type === "word-bank"
+              ? "生成上海选词填空 · 11 选 10"
+              : "生成完形填空 · 20 空",
+        })
+        .click();
+      const total = type === "word-bank" ? 10 : 20;
+      await expect(page.locator(".question")).toHaveCount(total);
+      await expect(page.locator(".gap-passage")).toContainText("270 词");
+      await expect(page.locator(".explanation")).toHaveCount(0);
+      for (let i = 0; i < total; i++) {
+        await page
+          .locator(".question")
+          .nth(i)
+          .locator(".options button")
+          .nth(type === "word-bank" ? i : 0)
+          .click();
+        if (type === "word-bank" && i === 0) {
+          await expect(
+            page.locator(".question").nth(1).locator(".options button").first(),
+          ).toBeDisabled();
+          await page
+            .locator(".question")
+            .first()
+            .locator(".options button")
+            .first()
+            .click();
+          await expect(
+            page.locator(".question").nth(1).locator(".options button").first(),
+          ).toBeEnabled();
+          await page
+            .locator(".question")
+            .first()
+            .locator(".options button")
+            .first()
+            .click();
+        }
+      }
+      await page.getByRole("button", { name: "提交答案" }).click();
+      await expect(page.locator(".quiz-status")).toContainText(
+        `${total} / ${total}`,
+      );
+      await expect(page.locator(".explanation")).toHaveCount(total);
+    }
+    await page.getByLabel("题型", { exact: true }).selectOption("word-bank");
+    await expect(page.locator(".quiz-status")).toContainText("10 / 10");
+    await page.getByLabel("题型", { exact: true }).selectOption("reading");
+    await expect(page.locator(".quiz-status")).toContainText("5 / 5");
     await page.getByRole("button", { name: "概要写作", exact: true }).click();
     await page.locator("#draft").fill(summary);
     await page.getByRole("button", { name: "获取 AI 写作反馈" }).click();
@@ -392,8 +475,22 @@ const summary =
     const exported = fs.readFileSync(exportFile, "utf8");
     assert.ok(exported.includes("AI 追问"));
     assert.ok(exported.includes("参考范文"));
+    assert.ok(exported.includes("上海选词填空 · 11 选 10"));
+    assert.ok(exported.includes("完形填空 · 20 空"));
+    assert.ok(exported.includes("[[20]]"));
+    assert.ok(exported.includes("K. purpose"));
     const persisted = await page.evaluate(() => window.folio.bootstrap());
     assert.equal(persisted.vocabulary.length, 1);
+    assert.equal(
+      persisted.progress[article.id].practices["托福"].exercises["word-bank"]
+        .submitted,
+      true,
+    );
+    assert.equal(
+      persisted.progress[article.id].practices["托福"].exercises["cloze-20"]
+        .quiz.questions.length,
+      20,
+    );
     assert.equal(
       persisted.progress[article.id].practices["托福"].writingImages.length,
       1,
